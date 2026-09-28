@@ -1,5 +1,13 @@
 # ndd DeepSeek 翻译插件
 
+![PixPin_2026-09-29_04-47-03.png](C:\Users\Bob\Desktop\PixPin_2026-09-29_04-47-03.png)
+
+
+
+![PixPin_2026-09-29_04-47-13.png](C:\Users\Bob\Desktop\PixPin_2026-09-29_04-47-13.png)
+
+
+
 给国产跨平台文本编辑器 **notepad--（ndd）** 写的原生 C++ 插件。
 
 **交互只有一件事**：在编辑器里选中一段文本 → 编辑器角落出现一个「译」小按钮 →
@@ -26,15 +34,15 @@
 > `Qt5Network.dll` 里搜不到任何 `schannel`/`secur32`），并且**写死**要找
 > `libssl-1_1-x64.dll` / `libcrypto-1_1-x64.dll`（OpenSSL 3.x 的 `libssl-3-x64.dll`
 > 它根本不看）。
->
+> 
 > 实测更坑的是：连"文件名、架构、OpenSSL 版本（1.1.1g）全都对"的两个 DLL
 > **仍然加载不了** —— `LoadLibrary` 返回 **Win32 错误 14001
 > (`ERROR_SXS_CANT_GEN_ACTCTX`)**，因为它们的 manifest 里写着依赖
 > **Avast 私有的 CRT 并排程序集** `Avast.VC140.CRT`（说明这两个 DLL 是从 Avast
 > 安装目录里提取出来的）。而 Qt 只会报一句没头没脑的 `TLS initialization failed`。
->
+> 
 > 换成 WinHTTP 之后，上面这整类问题一次性消失，也不用再依赖已经 EOL 的 OpenSSL 1.1。
->
+> 
 > `tools/check_openssl.py` 仍留在仓库里，但**当前版本用不到它** ——
 > 只有在你想退回 Qt 传输层时才需要。
 
@@ -44,16 +52,16 @@
 
 **已实际编译成功、已装入 ndd 并确认被加载。** 具体证据见第 8 节。摘要：
 
-| 项目 | 状态 |
-| --- | --- |
-| 真机编译（MSVC 14.51 + Qt 5.15.2 msvc2019_64） | ✅ 退出码 0，**0 error / 0 warning** |
-| 产物 | ✅ `build-verify\plugin\ndd-deepseek-translate.dll`，125,440 字节 |
-| 导出符号 | ✅ `NDD_PROC_IDENTIFY`、`NDD_PROC_MAIN`（无修饰名） |
-| 依赖 | ✅ Qt5Widgets/Gui/Core、qmyedit_qt5、**WINHTTP**、CRYPT32（**已无 Qt5Network、无 OpenSSL**） |
-| 装入 ndd 并启动 | ✅ 进程存活，**插件 DLL 确认在进程模块列表中** |
-| 网络层端到端（对着本地 mock 服务器） | ✅ 5 个场景全过（正常/取消/401/非JSON/choices空） |
-| 与 DLL 的 ABI 风险（vtable 布局） | ✅ 已识别并用"不依赖 vtable"的写法规避（见第 7 节陷阱三） |
-| **鼠标点按钮 → 看到译文** | ❌ **未验证**（需要真实 API Key + 人工操作） |
+| 项目                                       | 状态                                                                                 |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| 真机编译（MSVC 14.51 + Qt 5.15.2 msvc2019_64） | ✅ 退出码 0，**0 error / 0 warning**                                                    |
+| 产物                                       | ✅ `build-verify\plugin\ndd-deepseek-translate.dll`，125,440 字节                      |
+| 导出符号                                     | ✅ `NDD_PROC_IDENTIFY`、`NDD_PROC_MAIN`（无修饰名）                                        |
+| 依赖                                       | ✅ Qt5Widgets/Gui/Core、qmyedit_qt5、**WINHTTP**、CRYPT32（**已无 Qt5Network、无 OpenSSL**） |
+| 装入 ndd 并启动                               | ✅ 进程存活，**插件 DLL 确认在进程模块列表中**                                                       |
+| 网络层端到端（对着本地 mock 服务器）                    | ✅ 5 个场景全过（正常/取消/401/非JSON/choices空）                                                |
+| 与 DLL 的 ABI 风险（vtable 布局）                | ✅ 已识别并用"不依赖 vtable"的写法规避（见第 7 节陷阱三）                                                |
+| **鼠标点按钮 → 看到译文**                         | ❌ **未验证**（需要真实 API Key + 人工操作）                                                     |
 
 **头文件与 DLL 并非同一修订**（第 7 节陷阱三有完整证据），这不是能靠换头文件解决的——
 插件因此被刻意写成**不依赖 QScintilla 的 vtable 布局**，所以这个失配不影响功能。
@@ -69,13 +77,14 @@
 以及本机 `Notepad--v3.9.0-win10-portable` 的实际二进制确认：
 
 - 主程序启动时扫描 `<exe目录>\plugin\*.dll`，`resolve("NDD_PROC_IDENTIFY")` 取插件元信息；
+
 - 本插件声明 `m_menuType = 1`（自建二级菜单），主程序随后再 `resolve("NDD_PROC_MAIN")`，
   把已建好的子菜单 `m_rootMenu` 传进来，并附上：
-
-  | 参数 | 用途 |
-  | --- | --- |
-  | `QWidget* pNotepad` | 主窗口指针 |
-  | `std::function<QsciScintilla*()> getCurEdit` | 取当前编辑框 |
+  
+  | 参数                                              | 用途             |
+  | ----------------------------------------------- | -------------- |
+  | `QWidget* pNotepad`                             | 主窗口指针          |
+  | `std::function<QsciScintilla*()> getCurEdit`    | 取当前编辑框         |
   | `std::function<bool(int,void*)> pluginCallBack` | 回调主程序功能（本插件未用） |
 
 - 插件 DLL 放进 `plugin` 目录即可，**加载只在启动时发生一次，加完要重启 ndd**。
@@ -86,11 +95,11 @@
 而 `getCurEdit()` 返回 `QsciScintilla*`。不过脑子就把 hex 模式的"文本"送去翻译再写回，
 二进制文件会被毁掉。本插件读取 ndd 挂在编辑器上的动态属性来识别模式：
 
-| 属性名 | 含义 |
-| --- | --- |
-| `type` | 文档类型：1=普通文本 2=大文本只读 3=大文本读写 4=超大文本只读 5=hex |
-| `code` | 当前编码 id |
-| `filePath` | 当前文档路径 |
+| 属性名        | 含义                                         |
+| ---------- | ------------------------------------------ |
+| `type`     | 文档类型：1=普通文本 2=大文本只读 3=大文本读写 4=超大文本只读 5=hex |
+| `code`     | 当前编码 id                                    |
+| `filePath` | 当前文档路径                                     |
 
 只有 `type == 1` 且非只读时才显示「译」按钮；否则**连按钮都不出现**。
 
@@ -171,15 +180,15 @@ ndd-deepseek-translate/
 
 ### 3.0 前置条件
 
-| 组件 | 要求 | 本机现状 |
-| --- | --- | --- |
-| Visual Studio | 含"使用 C++ 的桌面开发"，x64 | ✅ VS 18 BuildTools，MSVC 14.51 |
-| CMake | ≥ 3.16 | ✅ 4.3.1（随 VS 提供） |
-| Qt | **5.15.2 msvc2019_64** | ✅ `C:\Qt\5.15.2\msvc2019_64` |
+| 组件            | 要求                     | 本机现状                          |
+| ------------- | ---------------------- | ----------------------------- |
+| Visual Studio | 含"使用 C++ 的桌面开发"，x64    | ✅ VS 18 BuildTools，MSVC 14.51 |
+| CMake         | ≥ 3.16                 | ✅ 4.3.1（随 VS 提供）              |
+| Qt            | **5.15.2 msvc2019_64** | ✅ `C:\Qt\5.15.2\msvc2019_64`  |
 
 > **必须用 MSVC，不能用 MinGW。** 插件与宿主之间会跨 DLL 传递 `std::function`、`QString`
 > 等 C++ 对象，编译器/运行库不一致会直接崩。
->
+> 
 > **只构建 Release。** Debug 会引入 `/MDd` 和 `_ITERATOR_DEBUG_LEVEL=2`，与宿主的
 > Release 运行库不匹配。CMakeLists 已强制 `MultiThreadedDLL`。
 
@@ -274,13 +283,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\install_to_ndd.ps1
 
 菜单项：
 
-| 菜单项 | 说明 |
-| --- | --- |
-| 翻译选中文本 | 不用点按钮，直接翻译当前选区，快捷键 **Ctrl+Alt+T** |
-| 设置… | API Key、模型、语言、提示词、按钮位置、超时 |
-| 重新载入配置 | 手改了 ini 之后不用重启 |
+| 菜单项     | 说明                                                                                       |
+| ------- | ---------------------------------------------------------------------------------------- |
+| 翻译选中文本  | 不用点按钮，直接翻译当前选区，快捷键 **Ctrl+Alt+T**                                                        |
+| 设置…     | API Key、模型、语言、提示词、按钮位置、超时                                                                |
+| 重新载入配置  | 手改了 ini 之后不用重启                                                                           |
 | **诊断…** | 列出插件实际看到的状态：宿主绑定、编辑器（类名/type 属性/模式判定/选区长度）、窗口内搜到的所有编辑器、按钮状态、配置、**传输层**。**按钮不出现或报错时先看这个** |
-| 关于 | 版本与配置文件路径 |
+| 关于      | 版本与配置文件路径                                                                                |
 
 ### 编辑器是怎么找到的（两道保险）
 
@@ -312,18 +321,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\install_to_ndd.ps1
 配置文件：`%APPDATA%\notepad\deepseek-translate.ini`
 （由 `QSettings(UserScope + IniFormat + 组织名 "notepad")` 决定，和 ndd 自己的 `nddsets.ini` 同目录）
 
-| 键 | 默认值 | 说明 |
-| --- | --- | --- |
-| `apiKeyProtected` | — | API Key，Windows 下用 **DPAPI 加密**（绑定当前用户），不是明文 |
-| `apiKeyPlain` | — | 兼容项：也可直接写明文，程序读到会自动改用加密存储 |
-| `baseUrl` | `https://api.deepseek.com` | 也接受带 `/v1` 的写法 |
-| `model` | `deepseek-chat` | 可选 `deepseek-reasoner`（会自动不发送 temperature） |
-| `temperature` | `1.0` | 0~2 |
-| `sourceLang` | `自动检测` | |
-| `targetLang` | `中文` | |
-| `systemPrompt` | 见代码 | 翻译规则提示词，可自行调优 |
-| `timeoutMs` | `60000` | 5000~300000 |
-| `buttonPlacement` | `corner` | `corner`=编辑器右下角；`selection`=贴着选区末尾 |
+| 键                 | 默认值                        | 说明                                           |
+| ----------------- | -------------------------- | -------------------------------------------- |
+| `apiKeyProtected` | —                          | API Key，Windows 下用 **DPAPI 加密**（绑定当前用户），不是明文 |
+| `apiKeyPlain`     | —                          | 兼容项：也可直接写明文，程序读到会自动改用加密存储                    |
+| `baseUrl`         | `https://api.deepseek.com` | 也接受带 `/v1` 的写法                               |
+| `model`           | `deepseek-chat`            | 可选 `deepseek-reasoner`（会自动不发送 temperature）   |
+| `temperature`     | `1.0`                      | 0~2                                          |
+| `sourceLang`      | `自动检测`                     |                                              |
+| `targetLang`      | `中文`                       |                                              |
+| `systemPrompt`    | 见代码                        | 翻译规则提示词，可自行调优                                |
+| `timeoutMs`       | `60000`                    | 5000~300000                                  |
+| `buttonPlacement` | `corner`                   | `corner`=编辑器右下角；`selection`=贴着选区末尾           |
 
 **写回文档**走 `beginUndoAction()` + `replaceSelectedText()` + `endUndoAction()`
 （底层 `SCI_REPLACESEL`），**一次 Ctrl+Z 可以整体撤销**。
@@ -463,10 +472,10 @@ __imp_?staticMetaObject@QsciScintilla@@2UQMetaObject@@B (__declspec(dllimport) .
 
 **事实**（用 `python tools\check_qsci_abi.py` 可复现）：
 
-| 头文件来源 | 只在头文件里 | 只在 DLL 里 |
-| --- | --- | --- |
+| 头文件来源                  | 只在头文件里                                                    | 只在 DLL 里                                                         |
+| ---------------------- | --------------------------------------------------------- | ---------------------------------------------------------------- |
 | gitee v3.9.0（**当前使用**） | 4：`findFirst`、`findFirstInSelection`、`findNext`、`replace` | 3：`changeOpenWithQuickMode`、`toMimeData`、`updateLineNumberWidth` |
-| GitHub 镜像（原先） | 同样 4 个 | 5：上面 3 个 + `playUserMacroRecord`、`startAutoWordCompletion` |
+| GitHub 镜像（原先）          | 同样 4 个                                                    | 5：上面 3 个 + `playUserMacroRecord`、`startAutoWordCompletion`       |
 
 - gitee 上 **master + cmake-dev 两个分支 + 全部 21 个 v3.x tag** 的 `qsciscintilla.h`
   都是同一个 blob，**不存在第二个候选版本**；GitHub 镜像那份更差。
@@ -487,11 +496,14 @@ __imp_?staticMetaObject@QsciScintilla@@2UQMetaObject@@B (__declspec(dllimport) .
    `text`、`selectedText`、`isReadOnly`、`beginUndoAction`、`endUndoAction`、
    `SendScintilla`（13 个重载全在）、`selectionChanged`。
 2. **万不得已要调虚函数，写成限定名**：
+   
    ```cpp
    editor->QsciScintilla::replaceSelectedText(text);   // 而不是 editor->replaceSelectedText(text)
    ```
+   
    限定名会抑制虚派发，直接引用导出符号 `?replaceSelectedText@QsciScintilla@@UEAAXAEBVQString@@@Z`。
    已实测编译产物里确实变成直接引用：
+   
    ```
    __imp_?replaceSelectedText@QsciScintilla@@UEAAXAEBVQString@@@Z
    ```
@@ -517,14 +529,14 @@ cmake --build build-verify --config Release
 
 符号级核对：
 
-| 检查 | 结果 |
-| --- | --- |
-| `dumpbin /exports` | `NDD_PROC_IDENTIFY`、`NDD_PROC_MAIN`（无修饰名）✓ |
-| `dumpbin /dependents` | Qt5Widgets / Qt5Gui / Qt5Core / qmyedit_qt5 / **WINHTTP** / CRYPT32 / MSVCP140 / VCRUNTIME140 ✓（**无 Qt5Network、无 OpenSSL**） |
-| `dumpbin /symbols selectionassistant.obj` | `__imp_?staticMetaObject@QsciScintilla@@2UQMetaObject@@B` ✓（陷阱二已修） |
-| `dumpbin /symbols nddhost.obj` | `__imp_?replaceSelectedText@QsciScintilla@@UEAAXAEBVQString@@@Z` ✓（陷阱三：限定名调用确实变成了直接引用导入符号，不再走 vtable） |
-| `python tools\check_qsci_abi.py` | 头文件独有 4 / DLL 独有 3 —— 失配已确认，且已按第 7 节三条规矩规避 |
-| 自研类 | `DeepSeekClient` / `TranslationPopup` 的 `staticMetaObject` 是普通名 ✓（它们定义在本 DLL 内，本就该如此） |
+| 检查                                        | 结果                                                                                                                          |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `dumpbin /exports`                        | `NDD_PROC_IDENTIFY`、`NDD_PROC_MAIN`（无修饰名）✓                                                                                  |
+| `dumpbin /dependents`                     | Qt5Widgets / Qt5Gui / Qt5Core / qmyedit_qt5 / **WINHTTP** / CRYPT32 / MSVCP140 / VCRUNTIME140 ✓（**无 Qt5Network、无 OpenSSL**） |
+| `dumpbin /symbols selectionassistant.obj` | `__imp_?staticMetaObject@QsciScintilla@@2UQMetaObject@@B` ✓（陷阱二已修）                                                          |
+| `dumpbin /symbols nddhost.obj`            | `__imp_?replaceSelectedText@QsciScintilla@@UEAAXAEBVQString@@@Z` ✓（陷阱三：限定名调用确实变成了直接引用导入符号，不再走 vtable）                       |
+| `python tools\check_qsci_abi.py`          | 头文件独有 4 / DLL 独有 3 —— 失配已确认，且已按第 7 节三条规矩规避                                                                                  |
+| 自研类                                       | `DeepSeekClient` / `TranslationPopup` 的 `staticMetaObject` 是普通名 ✓（它们定义在本 DLL 内，本就该如此）                                       |
 
 ### 装入真实 ndd
 
@@ -541,13 +553,13 @@ cmake --build build-verify --config Release
 
 ### 网络层端到端（对着 mock 服务器，5/5 通过）
 
-| 场景 | 结果 |
-| --- | --- |
-| 正常返回 | `RESULT_OK\|你好，世界。这是一次冒烟测试。`，退出码 0 |
-| 取消语义（翻译中再次触发） | 两次 `BUSY\|1→0`，**只产生 1 个结果**，被取消那次无任何信号 |
-| 401 鉴权失败 | `HTTP 401：Authentication Fails（authentication_error）` + 「API Key 无效或已过期…」 |
-| 非 JSON 响应 | `HTTP 200：接口返回的不是合法 JSON：illegal value` |
-| `choices` 为空 | `HTTP 200：接口没有返回任何结果（choices 为空）。` |
+| 场景            | 结果                                                                        |
+| ------------- | ------------------------------------------------------------------------- |
+| 正常返回          | `RESULT_OK\|你好，世界。这是一次冒烟测试。`，退出码 0                                        |
+| 取消语义（翻译中再次触发） | 两次 `BUSY\|1→0`，**只产生 1 个结果**，被取消那次无任何信号                                   |
+| 401 鉴权失败      | `HTTP 401：Authentication Fails（authentication_error）` + 「API Key 无效或已过期…」 |
+| 非 JSON 响应     | `HTTP 200：接口返回的不是合法 JSON：illegal value`                                   |
+| `choices` 为空  | `HTTP 200：接口没有返回任何结果（choices 为空）。`                                        |
 
 服务器实际收到的请求也核对过：
 
@@ -576,20 +588,20 @@ ndd-translate-client-test.exe https://127.0.0.1:18080/ok
 换成了 `WINHTTP.dll`，Qt 的 OpenSSL 那条链路彻底不在了。
 
 > **真实接口实测**（有可用网络/代理的环境下）：
->
+> 
 > ```
 > ndd-translate-client-test.exe https://api.deepseek.com
 > → RESULT_FAIL|HTTP 401：Authentication Fails, Your api key: ****arer is invalid
 >   (request_id: 3e906770-1b22-4c3e-afa8-18ecb1d85ef8)（authentication_error）
 >   API Key 无效或已过期，请在“设置”里重新填写。
 > ```
->
+> 
 > 用一个**故意填错的 Key** 打真实接口，一次就把整条链路验完了：
 > DNS → TCP → **TLS 握手（Schannel）** → HTTP → 真实 JSON 错误解析 →
 > `error.message` + `error.type` 拼接 → `friendlyHint(401)`。
 > 顺带证明了**自动跟随系统代理确实生效**（当时系统代理指向本机 7890）。
 > Key 有效时这一步会返回 200 和真正的译文。
->
+> 
 > ⚠️ 勘误：这里早期写的是"本机 TLS 被中间设备拦截"，**那个判断是错的**。
 > 真正原因是我用的构建沙箱会阻断 Schannel 的 `AcquireCredentialsHandle`
 > （报 `SEC_E_NO_CREDENTIALS`，且连接耗时近乎 0——根本没碰到网络）。
@@ -606,6 +618,7 @@ ndd-translate-client-test.exe https://127.0.0.1:18080/ok
 但**尚未在真实使用场景里确认它们修好了那个现象**——需要用户重启 ndd 后用「诊断」确认。
 
 ### 其它静态检查（都做过反证测试）
+
 - `python tools\check_includes.py` —— include 闭包完整（13 个 include 全部解析）
 - `python tools\check_decls.py` —— 6 对 .h/.cpp 的声明/定义/成员使用一致
 - ~~`tools\syntax_check.ps1` 基于假 Qt 头做语法检查~~ —— **已从仓库移除**。
@@ -647,18 +660,18 @@ ndd-translate-client-test.exe https://127.0.0.1:18080/ok
 
 ## 9. 排错
 
-| 现象 | 原因 / 处理 |
-| --- | --- |
-| 「插件」菜单里没有「DeepSeek 翻译」 | DLL 没放进 `<exe目录>\plugin\`；或放进去后没重启；或宿主是**便携版/不支持插件的版本** |
-| 加载时直接崩溃 | 十有八九是第 7 节陷阱二（`QSCINTILLA_DLL` 没打开）；也可能是 ABI 不匹配（必须 MSVC x64 + Qt 5.15.2 + Release） |
-| 编译报 `stdext: 找不到标识符` | 第 7 节陷阱一；确认 CMakeLists 里那行 `/FI...qt_stdext_shim.h` 还在 |
-| 界面中文乱码 | 编译时漏了 `/utf-8`；CMakeLists 已默认加上 |
-| `cmake` 报 `没有打开 QSCINTILLA_DLL 开关` | 这是护栏在拦你，按提示改 `qsciglobal.h`（尤其用了 `NDD_SOURCE_DIR` 时） |
-| 选中文本后按钮不出现 | 正常保护：hex / 大文本 / 只读模式下不显示，或当前不是普通文本视图 |
-| 按钮位置不对/被遮住 | 换「设置 → 悬浮按钮 → 出现位置」，或改成"贴着选区末尾" |
-| 链接错误指向 `QsciScintilla::xxx` | 导入库路径不对。正常情况下配置阶段会自动从 `.def` 生成（见 3.1）；若日志里出现"系统里找不到 lib.exe"，就手动跑一次 3.1 里那个脚本 |
-| 提示 `HTTP 401` / `HTTP 402` | Key 不对 / 账户余额不足，菜单「设置…」里点「测试连接」 |
-| 提示"选中的内容太长" | 选区超过 20000 字符，只选中要翻译的部分 |
+| 现象                                 | 原因 / 处理                                                                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------- |
+| 「插件」菜单里没有「DeepSeek 翻译」             | DLL 没放进 `<exe目录>\plugin\`；或放进去后没重启；或宿主是**便携版/不支持插件的版本**                             |
+| 加载时直接崩溃                            | 十有八九是第 7 节陷阱二（`QSCINTILLA_DLL` 没打开）；也可能是 ABI 不匹配（必须 MSVC x64 + Qt 5.15.2 + Release） |
+| 编译报 `stdext: 找不到标识符`               | 第 7 节陷阱一；确认 CMakeLists 里那行 `/FI...qt_stdext_shim.h` 还在                              |
+| 界面中文乱码                             | 编译时漏了 `/utf-8`；CMakeLists 已默认加上                                                     |
+| `cmake` 报 `没有打开 QSCINTILLA_DLL 开关` | 这是护栏在拦你，按提示改 `qsciglobal.h`（尤其用了 `NDD_SOURCE_DIR` 时）                                |
+| 选中文本后按钮不出现                         | 正常保护：hex / 大文本 / 只读模式下不显示，或当前不是普通文本视图                                               |
+| 按钮位置不对/被遮住                         | 换「设置 → 悬浮按钮 → 出现位置」，或改成"贴着选区末尾"                                                     |
+| 链接错误指向 `QsciScintilla::xxx`        | 导入库路径不对。正常情况下配置阶段会自动从 `.def` 生成（见 3.1）；若日志里出现"系统里找不到 lib.exe"，就手动跑一次 3.1 里那个脚本      |
+| 提示 `HTTP 401` / `HTTP 402`         | Key 不对 / 账户余额不足，菜单「设置…」里点「测试连接」                                                     |
+| 提示"选中的内容太长"                        | 选区超过 20000 字符，只选中要翻译的部分                                                             |
 
 ---
 
@@ -698,9 +711,9 @@ ndd-deepseek-translate-v1.2.0/
 
 `.gitignore` 已排除 `dist/` 和 `third_party/lib/*.lib`：
 
-| 位置 | 内容 |
-| --- | --- |
-| 仓库 | 源码 + CMake + 文档 + 工具（纯文本，不含二进制产物） |
+| 位置       | 内容                                        |
+| -------- | ----------------------------------------- |
+| 仓库       | 源码 + CMake + 文档 + 工具（纯文本，不含二进制产物）         |
 | Releases | `ndd-deepseek-translate-v1.2.0-win64.zip` |
 
 > GPL-3.0 要求分发二进制时同时提供对应源码。仓库本身就是源码，
