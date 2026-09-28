@@ -1,0 +1,98 @@
+====================================================================
+ ndd DeepSeek 翻译插件  v1.2.0  (Windows x64)
+ 给 notepad--（ndd）用的原生 C++ 插件
+====================================================================
+
+【这个插件做什么】
+
+  在编辑器里选中一段文本 → 编辑器角落出现一个「译」小按钮 →
+  点它 → 在选区旁边浮窗显示 DeepSeek 的译文（Esc 或点别处关闭）。
+
+  也可以不用按钮：菜单「插件 → DeepSeek 翻译 → 翻译选中文本」
+  或快捷键 Ctrl+Alt+T。
+
+
+【安装】
+
+  1. 完全关闭 notepad--。
+
+  2. 把 ndd-deepseek-translate.dll 复制到 ndd 安装目录下的 plugin 子目录，
+     即和 Notepad--.exe 同级的那一层：
+
+         <ndd安装目录>\plugin\ndd-deepseek-translate.dll
+
+  3. 启动 ndd。菜单栏「插件」下会出现「DeepSeek 翻译」。
+
+  卸载：删掉这个 DLL 即可。
+
+
+【配置】
+
+  「插件 → DeepSeek 翻译 → 设置…」
+
+    · API Key   —— 到 platform.deepseek.com 申请，形如 sk-xxxxxxxx
+                   保存时会用 Windows DPAPI 加密，只有当前用户能解开
+    · 接口地址  —— 默认 https://api.deepseek.com/chat/completions
+    · 模型      —— deepseek-chat（默认，快）或 deepseek-reasoner（慢但更强）
+    · 源语言 / 目标语言、系统提示词、超时
+    · 按钮位置  —— 「贴着选区末尾」或「编辑器右下角」
+
+  配置存在：%APPDATA%\notepad\deepseek-translate.ini
+
+  填好后建议先点「测试连接」确认能通，再选一段英文试按钮。
+
+
+【遇到问题先看「诊断…」】
+
+  菜单「插件 → DeepSeek 翻译 → 诊断…」会把插件实际看到的状态列出来：
+
+    · 宿主绑定：拿到的是哪个主窗口、宿主的"取当前编辑器"回调有没有返回空
+    · 助手当前跟踪的编辑器：运行时类名、type 属性、模式判定、选区长度
+    · 宿主窗口里能搜到的所有编辑器
+    · 「译」按钮是否存在、是否可见、位置尺寸
+    · 配置文件路径、API Key 是否已填、接口地址
+    · 传输层
+
+  其中【传输层】一行应显示：
+
+      WinHTTP + Schannel（Windows 自带，无需 OpenSSL 等外部库）
+
+  如果显示的是一长串关于 OpenSSL 的说明，说明你装的还是旧版本 DLL。
+
+
+【常见问题】
+
+  Q: 点「测试连接」报 TLS 握手失败 / 连不上？
+  A: 本版传输层用 Windows 自带的 WinHTTP + Schannel，不需要装任何东西。
+     如果失败，多半是网络、代理或系统时间的问题：
+       · 先确认能正常上网（浏览器能打开 https://api.deepseek.com）
+       · 若开着代理，注意有些代理会做 TLS 中间人，可试着关掉代理直连
+       · 检查系统时间是否正确
+
+  Q: 选中文本后没有出现「译」按钮？
+  A: 先看「诊断…」。
+       · 如果【助手当前跟踪的编辑器】显示"无"，把诊断内容发出来。
+       · hex 视图和大文本只读视图刻意不支持。
+       · 确认「设置」里的目标语言等已填、API Key 已填。
+       · 没有 API Key 时按钮仍会出现，但点击会提示先配置。
+
+  Q: 翻译很慢？
+  A: deepseek-reasoner 比 deepseek-chat 慢很多。日常翻译用 deepseek-chat。
+     也可以在「设置」里调小超时时间。
+
+  Q: 译文能写回文档吗？
+  A: 能。浮窗里点「替换选区」即可，写回后 Ctrl+Z 可以整体撤销。
+
+  Q: 支持哪些 ndd 版本？
+  A: 针对 notepad-- v3.9.0（Qt 5.15.2 / MSVC x64）构建和验证。
+
+
+【许可】
+
+  本插件以 GPL-3.0 许可发布，完整条文见同目录的 LICENSE 文件。
+  源码：<把这里替换成你的 GitHub 仓库地址>
+
+  notepad-- 本体同样是 GPL-3.0；插件在构建时使用 QScintilla（GPL-3.0）的头文件，
+  并在运行期链接宿主自带的 qmyedit_qt5.dll。
+
+  本程序不提供任何担保。API Key 由你自行保管，翻译文本会发送给 DeepSeek 服务。
