@@ -575,10 +575,25 @@ ndd-translate-client-test.exe https://127.0.0.1:18080/ok
 再用 `dumpbin /dependents` 核对：插件 DLL 的依赖里**已经没有 `Qt5Network.dll`**，
 换成了 `WINHTTP.dll`，Qt 的 OpenSSL 那条链路彻底不在了。
 
-> 本机（沙箱内）对 `api.deepseek.com` 发真实 HTTPS 请求依然失败，但失败在 **TLS 层**
-> （12175 / 12185）。这是这台机器上 TLS 被中间设备拦截导致的 —— 同一环境下
-> git / pip / Invoke-WebRequest 的 HTTPS 也全部失败。你自己的 ndd 不在这个沙箱里，
-> 走的是系统正常的信任链。
+> **真实接口实测**（有可用网络/代理的环境下）：
+>
+> ```
+> ndd-translate-client-test.exe https://api.deepseek.com
+> → RESULT_FAIL|HTTP 401：Authentication Fails, Your api key: ****arer is invalid
+>   (request_id: 3e906770-1b22-4c3e-afa8-18ecb1d85ef8)（authentication_error）
+>   API Key 无效或已过期，请在“设置”里重新填写。
+> ```
+>
+> 用一个**故意填错的 Key** 打真实接口，一次就把整条链路验完了：
+> DNS → TCP → **TLS 握手（Schannel）** → HTTP → 真实 JSON 错误解析 →
+> `error.message` + `error.type` 拼接 → `friendlyHint(401)`。
+> 顺带证明了**自动跟随系统代理确实生效**（当时系统代理指向本机 7890）。
+> Key 有效时这一步会返回 200 和真正的译文。
+>
+> ⚠️ 勘误：这里早期写的是"本机 TLS 被中间设备拦截"，**那个判断是错的**。
+> 真正原因是我用的构建沙箱会阻断 Schannel 的 `AcquireCredentialsHandle`
+> （报 `SEC_E_NO_CREDENTIALS`，且连接耗时近乎 0——根本没碰到网络）。
+> 非沙箱环境下 Schannel 完全正常。
 
 ### 编辑器查找的两道保险（新增，实测待确认）
 
@@ -597,14 +612,13 @@ ndd-translate-client-test.exe https://127.0.0.1:18080/ok
   它是"还没装 Qt 5.15.2"时的兜底手段；后来有了真 Qt，就以真机编译为准了。
   那套假头跟不上代码演进（缺 `QFutureWatcher`、QtConcurrent 等），会报假错，
   而一个会报假错的检查比没有更糟。需要时可以从 git 历史里取回。
-  （现在有了真实 Qt，这条退化为"没装 Qt 时的兜底手段"）
 - 三个脚本都做过**反证测试**（故意插入错误必须报警），过程中真的抓到过两次"空通过"
 
 ### 仍未验证的
 
-- ❌ **真实 HTTPS 请求打到 api.deepseek.com**：本机 shell 完全无外网（而且这台机器的
-  TLS 被中间设备拦截，git/pip/Invoke-WebRequest 的 HTTPS 全失败），所以只能验证到
-  "WinHTTP 确实在做 TLS 握手"这一层。需要一个能正常上网的环境实测。
+- ❌ **用有效 Key 拿到真实译文（HTTP 200）**：真实接口的 401 路径已经验证过了（见上），
+  但 200 响应下 `choices[0].message.content` 的解析还没用真 Key 跑过。
+  本地 mock 返回的响应体与真实接口格式一致，风险很低。
 - ❌ **鼠标点「译」按钮 → 浮窗显示译文** 这一整条 UI 交互链，需要真实 API Key + 人工操作。
   （`tests/selectionassistant_e2e.cpp` 已经把这条链路写成了自动化测试，但它需要
   头文件与 DLL 完全同版本才能链接，所以默认关闭——见第 6 节。）
