@@ -90,7 +90,7 @@
 【许可】
 
   本插件以 GPL-3.0 许可发布，完整条文见同目录的 LICENSE 文件。
-  源码：<把这里替换成你的 GitHub 仓库地址>
+  源码：https://github.com/gghfg/translator-plugin-for-notepad--
 
   notepad-- 本体同样是 GPL-3.0；插件在构建时使用 QScintilla（GPL-3.0）的头文件，
   并在运行期链接宿主自带的 qmyedit_qt5.dll。
