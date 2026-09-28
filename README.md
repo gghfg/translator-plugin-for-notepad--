@@ -1,10 +1,10 @@
 # ndd DeepSeek 翻译插件
 
-![PixPin_2026-09-29_04-47-03.png](C:\Users\Bob\Desktop\PixPin_2026-09-29_04-47-03.png)
+![ActualScreenshot1.png](ActualScreenshot1.png)
 
 
 
-![PixPin_2026-09-29_04-47-13.png](C:\Users\Bob\Desktop\PixPin_2026-09-29_04-47-13.png)
+![ActualScreenshot2.png](ActualScreenshot2.png)
 
 
 
