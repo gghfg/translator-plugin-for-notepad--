@@ -156,8 +156,6 @@ ndd-deepseek-translate/
 │   ├── mock_deepseek_server.py   本地 mock 接口（联调用）
 │   ├── check_openssl.py          校验 OpenSSL 1.1 能否给 Qt 5.15 用
 │   │                             （**当前版本用不到**，只在退回 Qt 传输层时才有意义）
-│   ├── syntax_check.ps1          无 Qt 环境下的兜底语法检查（基于最小 Qt 桩）
-│   ├── syntax-probe/             上面那个脚本用的 Qt 桩
 │   ├── check_includes.py         校验 include 闭包完整（带反证测试）
 │   └── check_decls.py            校验头文件声明与 .cpp 定义/使用一致（带反证测试）
 └── optional/
@@ -595,7 +593,10 @@ ndd-translate-client-test.exe https://127.0.0.1:18080/ok
 ### 其它静态检查（都做过反证测试）
 - `python tools\check_includes.py` —— include 闭包完整（13 个 include 全部解析）
 - `python tools\check_decls.py` —— 6 对 .h/.cpp 的声明/定义/成员使用一致
-- `powershell -File tools\syntax_check.ps1` —— 7 个源文件基于 Qt 桩的 MSVC 语法检查全过
+- ~~`tools\syntax_check.ps1` 基于假 Qt 头做语法检查~~ —— **已从仓库移除**。
+  它是"还没装 Qt 5.15.2"时的兜底手段；后来有了真 Qt，就以真机编译为准了。
+  那套假头跟不上代码演进（缺 `QFutureWatcher`、QtConcurrent 等），会报假错，
+  而一个会报假错的检查比没有更糟。需要时可以从 git 历史里取回。
   （现在有了真实 Qt，这条退化为"没装 Qt 时的兜底手段"）
 - 三个脚本都做过**反证测试**（故意插入错误必须报警），过程中真的抓到过两次"空通过"
 
